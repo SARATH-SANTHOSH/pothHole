@@ -6,14 +6,34 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from firebase_admin import credentials, firestore, initialize_app
 from werkzeug.security import generate_password_hash, check_password_hash
 import uuid
+import os
+from dotenv import load_dotenv
 
 # Flask app setup
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
 # Firestore setup
-cred = credentials.Certificate('services.json')
-initialize_app(cred)
+import firebase_admin
+from firebase_admin import credentials
+
+load_dotenv()
+
+
+cred = credentials.Certificate({
+    "type": os.getenv("FIREBASE_TYPE"),
+    "project_id": os.getenv("FIREBASE_PROJECT_ID"),
+    "private_key_id": os.getenv("FIREBASE_PRIVATE_KEY_ID"),
+    "private_key": os.getenv("FIREBASE_PRIVATE_KEY").replace('\\n', '\n'),
+    "client_email": os.getenv("FIREBASE_CLIENT_EMAIL"),
+    "client_id": os.getenv("FIREBASE_CLIENT_ID"),
+    "auth_uri": os.getenv("FIREBASE_AUTH_URI"),
+    "token_uri": os.getenv("FIREBASE_TOKEN_URI"),
+    "auth_provider_x509_cert_url": os.getenv("FIREBASE_AUTH_PROVIDER_CERT_URL"),
+    "client_x509_cert_url": os.getenv("FIREBASE_CLIENT_CERT_URL")
+})
+
+firebase_admin.initialize_app(cred)
 db = firestore.client()
 users_collection = db.collection('users')  # Firestore collection for user data
 coordinates_collection = db.collection('Coordinates')  # Firestore collection for latitude and longitude
