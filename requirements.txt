@@ -1,0 +1,5 @@
+Flask
+firebase-admin
+Werkzeug
+gunicorn==20.1.0
+

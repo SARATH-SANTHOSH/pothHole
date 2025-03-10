@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Location</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            border: none;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="text-center mb-4">Update Location</h2>
+        <form method="POST" action="{{ url_for('update_location') }}">
+            <!-- Location Name Field -->
+            <div class="mb-3">
+                <label for="name" class="form-label">Location Name (Optional)</label>
+                <input type="text" name="name" id="name" class="form-control" placeholder="Enter Location Name (e.g., palarivattom)" value="{{ form_data.name }}">
+            </div>
+            <!-- Latitude Field -->
+            <div class="mb-3">
+                <label for="latitude" class="form-label">Latitude</label>
+                <input type="text" name="latitude" id="latitude" class="form-control" placeholder="Enter Latitude" value="{{ form_data.latitude }}" required>
+            </div>
+            <!-- Longitude Field -->
+            <div class="mb-3">
+                <label for="longitude" class="form-label">Longitude</label>
+                <input type="text" name="longitude" id="longitude" class="form-control" placeholder="Enter Longitude" value="{{ form_data.longitude }}" required>
+            </div>
+            <!-- Submit Button -->
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary">Add Location</button>
+            </div>
+        </form>
+
+        <!-- Delete Location Form -->
+        <form method="POST" action="{{ url_for('delete_location') }}" class="mt-4">
+            <div class="mb-3">
+                <label for="delete_name" class="form-label">Delete Location</label>
+                <input type="text" name="name" id="delete_name" class="form-control" placeholder="Enter Location Name to Delete" required>
+            </div>
+            <div class="d-grid">
+                <button type="submit" class="btn btn-danger">Delete Location</button>
+            </div>
+        </form>
+
+        <div class="text-center mt-3">
+            <a href="/logout" class="text-danger"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </div>
+</body>
+</html>
