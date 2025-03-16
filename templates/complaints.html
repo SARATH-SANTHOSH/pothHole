@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Complaints</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.13/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .complaint-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+            padding: 20px;
+        }
+        .resolved-btn {
+            float: right;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="text-center mb-4">Pending Complaints</h2>
+        <a href="{{ url_for('update_location') }}" class="btn btn-secondary mb-3">
+            <i class="fas fa-arrow-left"></i> Back to Update Location
+        </a>
+
+        <button id="downloadPdf" class="btn btn-info mb-3">
+            <i class="fas fa-download"></i> Download as PDF
+        </button>
+
+        {% if complaints %}
+            {% for complaint in complaints %}
+                <div class="complaint-card">
+                    <h5>{{ complaint.name }}</h5>
+                    <p class="text-muted">{{ complaint.location }}</p>
+                    <p>{{ complaint.complaint }}</p>
+                    <form method="POST" action="{{ url_for('mark_completed') }}">
+                        <input type="hidden" name="complaint_id" value="{{ complaint.id }}">
+                        <button type="submit" class="btn btn-success resolved-btn">
+                            <i class="fas fa-check"></i> Mark Resolved
+                        </button>
+                    </form>
+                    <div class="clearfix"></div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info">No unresolved complaints found!</div>
+        {% endif %}
+    </div>
+
+    <script>
+        document.getElementById('downloadPdf').addEventListener('click', function() {
+            const { jsPDF } = window.jspdf;
+
+            const doc = new jsPDF();
+
+            const complaintsData = {{ complaints | tojson }};
+
+            const tableColumn = ["Name", "Location", "Complaint"];
+            const tableRows = [];
+
+            complaintsData.forEach(complaint => {
+                tableRows.push([
+                    complaint.name,
+                    complaint.location,
+                    complaint.complaint
+                ]);
+            });
+
+            doc.autoTable({
+                head: [tableColumn],
+                body: tableRows,
+                margin: { top: 30 },
+                headStyles: { fillColor: [40, 167, 69] } // Bootstrap success color
+            });
+
+            doc.save('complaints.pdf');
+        });
+    </script>
+</body>
+</html>

@@ -1,18 +1,12 @@
-# pip install -r requirements.txt
-
-
-
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from firebase_admin import credentials, firestore, initialize_app
 from werkzeug.security import generate_password_hash, check_password_hash
 import uuid
 import os
 import sys
-import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from dotenv import load_dotenv
-
 
 # Flask app setup
 app = Flask(__name__)
@@ -23,7 +17,6 @@ import firebase_admin
 from firebase_admin import credentials
 
 load_dotenv()
-
 
 cred = credentials.Certificate({
     "type": os.getenv("FIREBASE_TYPE"),
@@ -42,16 +35,78 @@ firebase_admin.initialize_app(cred)
 db = firestore.client()
 users_collection = db.collection('users')  # Firestore collection for user data
 coordinates_collection = db.collection('Coordinates')  # Firestore collection for latitude and longitude
+complaints_collection = db.collection('Complaints')  # Firestore collection for complaints
 
 # Routes
 @app.route('/')
-def home():
-    if 'username' in session:
-        return redirect(url_for('update_location'))
-    return redirect(url_for('login'))
+def landing_page():
+    return render_template('landing.html')
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
+@app.route('/report_complaint', methods=['POST'])
+def report_complaint():
+    if request.method == 'POST':
+        name = request.form.get('name')
+        complaint = request.form.get('complaint')
+        location = request.form.get('location')
+
+        if name and complaint and location:
+            try:
+                complaints_collection.add({
+                    'name': name,
+                    'complaint': complaint,
+                    'location': location,
+                    'status': 'pending',
+                    'reported_at': firestore.SERVER_TIMESTAMP
+                })
+                flash('Complaint reported successfully!', 'success')
+            except Exception as e:
+                flash(f'Error: {str(e)}', 'danger')
+        else:
+            flash('Please fill all fields.', 'danger')
+
+    return redirect(url_for('landing_page'))
+
+
+
+@app.route('/view_complaints')
+def view_complaints():
+    if 'username' not in session:
+        return redirect(url_for('admin_login'))
+    
+    # Get only unresolved complaints
+    complaints_ref = db.collection('Complaints')
+    complaints = complaints_ref.where('status', '!=', 'completed').stream()
+    
+    complaints_list = []
+    for complaint in complaints:
+        complaint_data = complaint.to_dict()
+        complaint_data['id'] = complaint.id  # Store document ID for marking as completed
+        complaints_list.append(complaint_data)
+    
+    return render_template('complaints.html', complaints=complaints_list)
+
+@app.route('/mark_completed', methods=['POST'])
+def mark_completed():
+    if 'username' not in session:
+        return redirect(url_for('admin_login'))
+    
+    complaint_id = request.form.get('complaint_id')
+    if complaint_id:
+        try:
+            db.collection('Complaints').document(complaint_id).update({
+                'status': 'completed',
+                'resolved_by': session['username'],
+                'resolved_at': firestore.SERVER_TIMESTAMP
+            })
+            flash('Complaint marked as completed!', 'success')
+        except Exception as e:
+            flash(f'Error: {str(e)}', 'danger')
+    
+    return redirect(url_for('view_complaints'))
+
+
+@app.route('/admin_login', methods=['GET', 'POST'])
+def admin_login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -78,14 +133,14 @@ def signup():
         else:
             users_collection.document(username).set({'password': hashed_password})
             flash('Signup successful! Please log in.', 'success')
-            return redirect(url_for('login'))
+            return redirect(url_for('admin_login'))
 
     return render_template('signup.html')
 
 @app.route('/update_location', methods=['GET', 'POST'])
 def update_location():
     if 'username' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('admin_login'))
 
     # Initialize form data variables
     form_data = {
@@ -149,13 +204,10 @@ def update_location():
 
     return render_template('update_location.html', form_data=form_data)
 
-
-
-
 @app.route('/delete_location', methods=['POST'])
 def delete_location():
     if 'username' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('admin_login'))
 
     if request.method == 'POST':
         name = request.form.get('name')  # Get the name from the form
@@ -185,16 +237,11 @@ def delete_location():
 
     return redirect(url_for('update_location'))
 
-
-
-
-
-
 @app.route('/logout')
 def logout():
     session.pop('username', None)
     flash('Logged out successfully.', 'info')
-    return redirect(url_for('login'))
+    return redirect(url_for('landing_page'))
 
 if __name__ == '__main__':
     app.run(debug=True)
